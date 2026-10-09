@@ -1,0 +1,225 @@
+{
+  "run_id": "run_20261009_110229_h30s",
+  "horizon_s": 30,
+  "horizon_steps": 10,
+  "best_model": "Ensemble",
+  "models": [
+    "Ridge",
+    "LightGBM",
+    "XGBoost",
+    "MLP"
+  ],
+  "ensemble_members": [
+    "LightGBM",
+    "XGBoost",
+    "MLP"
+  ],
+  "features": [
+    "tt_01_product_in_c",
+    "tt_02_regen_1_in_c",
+    "tt_03_regen_2_in_c",
+    "tt_05_holding_in_c",
+    "tt_06_holding_out1_c",
+    "tt_08_holding_out2_c",
+    "tt_11_regen_1_out_c",
+    "tt_12_product_out_c",
+    "tt_15_chiller_in_c",
+    "tt_16_chiller_out_c",
+    "delta_t_c",
+    "pt_01_raw_milk_bar",
+    "pt_03_holding_in_bar",
+    "pt_04_chilled_milk_bar",
+    "pt_05_hot_water_bar",
+    "feed_flow_l_h",
+    "steam_cv",
+    "sp_03_heat_fdv_hys_c",
+    "tt_06_holding_out1_c_lag1",
+    "tt_06_holding_out1_c_lag2",
+    "tt_06_holding_out1_c_lag3",
+    "tt_06_holding_out1_c_lag5",
+    "tt_06_holding_out1_c_lag10",
+    "tt_06_holding_out1_c_lag20",
+    "tt_05_holding_in_c_lag1",
+    "tt_05_holding_in_c_lag2",
+    "tt_05_holding_in_c_lag3",
+    "tt_05_holding_in_c_lag5",
+    "tt_05_holding_in_c_lag10",
+    "tt_05_holding_in_c_lag20",
+    "steam_cv_lag1",
+    "steam_cv_lag2",
+    "steam_cv_lag3",
+    "steam_cv_lag5",
+    "steam_cv_lag10",
+    "steam_cv_lag20",
+    "feed_flow_l_h_lag1",
+    "feed_flow_l_h_lag2",
+    "feed_flow_l_h_lag3",
+    "feed_flow_l_h_lag5",
+    "feed_flow_l_h_lag10",
+    "feed_flow_l_h_lag20",
+    "tt_06_holding_out1_c_diff1",
+    "tt_06_holding_out1_c_diff3",
+    "tt_06_holding_out1_c_diff10",
+    "tt_05_holding_in_c_diff1",
+    "tt_05_holding_in_c_diff3",
+    "tt_05_holding_in_c_diff10",
+    "steam_cv_diff1",
+    "steam_cv_diff3",
+    "steam_cv_diff10",
+    "feed_flow_l_h_diff1",
+    "feed_flow_l_h_diff3",
+    "feed_flow_l_h_diff10",
+    "tt_01_product_in_c_diff1",
+    "tt_01_product_in_c_diff3",
+    "tt_01_product_in_c_diff10",
+    "tt_06_holding_out1_c_rmean5",
+    "tt_06_holding_out1_c_rstd5",
+    "tt_06_holding_out1_c_rmean10",
+    "tt_06_holding_out1_c_rstd10",
+    "tt_06_holding_out1_c_rmean20",
+    "tt_06_holding_out1_c_rstd20",
+    "tt_05_holding_in_c_rmean5",
+    "tt_05_holding_in_c_rstd5",
+    "tt_05_holding_in_c_rmean10",
+    "tt_05_holding_in_c_rstd10",
+    "tt_05_holding_in_c_rmean20",
+    "tt_05_holding_in_c_rstd20",
+    "steam_cv_rmean5",
+    "steam_cv_rstd5",
+    "steam_cv_rmean10",
+    "steam_cv_rstd10",
+    "steam_cv_rmean20",
+    "steam_cv_rstd20",
+    "holding_tube_loss_c",
+    "margin_to_divert_c",
+    "steam_per_kflow",
+    "heating_rise_c",
+    "log_time_in_run_s"
+  ],
+  "config": {
+    "seed": 42,
+    "data": {
+      "csv_dir": "csv_files",
+      "cache_path": "artifacts/pasteurizer_clean.parquet",
+      "timestamp_col": "date_time",
+      "sample_period_s": 3,
+      "max_gap_s": 10
+    },
+    "production": {
+      "flow_col": "feed_flow_l_h",
+      "min_flow_lph": 1000
+    },
+    "target": {
+      "column": "tt_06_holding_out1_c",
+      "horizon_s": 30,
+      "divert_threshold_c": 82.0,
+      "alert_margin_c": 0.5
+    },
+    "features": {
+      "sensors": [
+        "tt_01_product_in_c",
+        "tt_02_regen_1_in_c",
+        "tt_03_regen_2_in_c",
+        "tt_05_holding_in_c",
+        "tt_06_holding_out1_c",
+        "tt_08_holding_out2_c",
+        "tt_11_regen_1_out_c",
+        "tt_12_product_out_c",
+        "tt_15_chiller_in_c",
+        "tt_16_chiller_out_c",
+        "delta_t_c",
+        "pt_01_raw_milk_bar",
+        "pt_03_holding_in_bar",
+        "pt_04_chilled_milk_bar",
+        "pt_05_hot_water_bar",
+        "feed_flow_l_h",
+        "steam_cv",
+        "sp_03_heat_fdv_hys_c"
+      ],
+      "lag_columns": [
+        "tt_06_holding_out1_c",
+        "tt_05_holding_in_c",
+        "steam_cv",
+        "feed_flow_l_h"
+      ],
+      "lags": [
+        1,
+        2,
+        3,
+        5,
+        10,
+        20
+      ],
+      "diff_columns": [
+        "tt_06_holding_out1_c",
+        "tt_05_holding_in_c",
+        "steam_cv",
+        "feed_flow_l_h",
+        "tt_01_product_in_c"
+      ],
+      "diff_steps": [
+        1,
+        3,
+        10
+      ],
+      "rolling_columns": [
+        "tt_06_holding_out1_c",
+        "tt_05_holding_in_c",
+        "steam_cv"
+      ],
+      "rolling_windows": [
+        5,
+        10,
+        20
+      ]
+    },
+    "split": {
+      "train_frac": 0.7,
+      "val_frac": 0.15
+    },
+    "models": {
+      "ridge": {
+        "alpha": 1.0
+      },
+      "lightgbm": {
+        "objective": "regression",
+        "learning_rate": 0.03,
+        "num_leaves": 63,
+        "min_data_in_leaf": 50,
+        "feature_fraction": 0.8,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 1,
+        "lambda_l2": 1.0,
+        "num_boost_round": 1500,
+        "early_stopping_rounds": 100
+      },
+      "xgboost": {
+        "objective": "reg:squarederror",
+        "eta": 0.03,
+        "max_depth": 7,
+        "min_child_weight": 10,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "lambda": 1.0,
+        "tree_method": "hist",
+        "num_boost_round": 1500,
+        "early_stopping_rounds": 100
+      },
+      "mlp": {
+        "hidden": 256,
+        "n_blocks": 3,
+        "dropout": 0.1,
+        "lr": 0.001,
+        "weight_decay": 0.0001,
+        "batch_size": 512,
+        "epochs": 40,
+        "patience": 10,
+        "huber_delta": 1.0
+      }
+    },
+    "output": {
+      "root": "outputs",
+      "live_plot_refresh_s": 2.0
+    }
+  }
+}

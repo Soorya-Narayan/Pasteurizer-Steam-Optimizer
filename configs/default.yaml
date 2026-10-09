@@ -1,0 +1,96 @@
+# ---------------------------------------------------------------------------
+# HTST Pasteurizer – Thermal Predictive Model configuration
+# All column names are the *sanitized* versions produced by
+# src/data/loader.py::sanitize_column  (e.g. "TT-06 Holding Out1 (°C)" ->
+# "tt_06_holding_out1_c").
+# ---------------------------------------------------------------------------
+
+seed: 42
+
+data:
+  csv_dir: csv_files
+  cache_path: artifacts/pasteurizer_clean.parquet
+  timestamp_col: date_time
+  sample_period_s: 3          # SCADA logging interval
+  max_gap_s: 10               # a larger gap breaks a production segment
+
+production:
+  flow_col: feed_flow_l_h
+  min_flow_lph: 1000          # rows below this are treated as idle / not producing
+
+target:
+  column: tt_06_holding_out1_c   # holding-tube outlet temperature
+  horizon_s: 30                  # forecast horizon (seconds ahead)
+  divert_threshold_c: 82.0       # FDV divert set point (SP-03 Heat FDV Hys)
+  alert_margin_c: 0.5            # raise an early warning if forecast < threshold + margin
+
+features:
+  sensors:
+    - tt_01_product_in_c
+    - tt_02_regen_1_in_c
+    - tt_03_regen_2_in_c
+    - tt_05_holding_in_c
+    - tt_06_holding_out1_c
+    - tt_08_holding_out2_c
+    - tt_11_regen_1_out_c
+    - tt_12_product_out_c
+    - tt_15_chiller_in_c
+    - tt_16_chiller_out_c
+    - delta_t_c
+    - pt_01_raw_milk_bar
+    - pt_03_holding_in_bar
+    - pt_04_chilled_milk_bar
+    - pt_05_hot_water_bar
+    - feed_flow_l_h
+    - steam_cv
+    - sp_03_heat_fdv_hys_c
+  lag_columns: [tt_06_holding_out1_c, tt_05_holding_in_c, steam_cv, feed_flow_l_h]
+  lags: [1, 2, 3, 5, 10, 20]                 # in samples (x3 s)
+  diff_columns: [tt_06_holding_out1_c, tt_05_holding_in_c, steam_cv, feed_flow_l_h, tt_01_product_in_c]
+  diff_steps: [1, 3, 10]
+  rolling_columns: [tt_06_holding_out1_c, tt_05_holding_in_c, steam_cv]
+  rolling_windows: [5, 10, 20]
+
+split:                      # chronological – no shuffling, no leakage
+  train_frac: 0.70
+  val_frac: 0.15            # remainder is the test set
+
+models:
+  ridge:
+    alpha: 1.0
+  lightgbm:
+    objective: regression
+    learning_rate: 0.03
+    num_leaves: 63
+    min_data_in_leaf: 50
+    feature_fraction: 0.8
+    bagging_fraction: 0.8
+    bagging_freq: 1
+    lambda_l2: 1.0
+    num_boost_round: 1500
+    early_stopping_rounds: 100
+  xgboost:
+    objective: "reg:squarederror"
+    eta: 0.03
+    max_depth: 7
+    min_child_weight: 10
+    subsample: 0.8
+    colsample_bytree: 0.8
+    lambda: 1.0
+    tree_method: hist
+    num_boost_round: 1500
+    early_stopping_rounds: 100
+  mlp:
+    hidden: 256
+    n_blocks: 3
+    dropout: 0.1
+    lr: 0.001
+    weight_decay: 0.0001
+    batch_size: 512
+    epochs: 40
+    patience: 10
+    huber_delta: 1.0
+
+output:
+  root: outputs
+  live_plot_refresh_s: 2.0   # how often the live training dashboard PNG is redrawn
