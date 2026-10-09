@@ -6,7 +6,7 @@ This repository implements a production-grade machine learning pipeline to forec
 
 ---
 
-##  Pipeline Highlights
+## Pipeline Highlights
 
 * **Thermal Lag Modeling**: Models temperature change ($\Delta T_{t+h} = T_{t+h} - T_t$) rather than static levels, capturing thermodynamic delay and steam valve dynamics.
 * **Leakage-Free Production Segmentation**: Only valid production runs (flow $\ge 1000\text{ L/h}$) are modeled, with lag features bounded within continuous production runs.
@@ -22,7 +22,7 @@ This repository implements a production-grade machine learning pipeline to forec
 
 ---
 
-##  Benchmark Performance (Unseen Test Set)
+## Benchmark Performance (Unseen Test Set)
 
 | Model | MAE (°C) | RMSE (°C) | 95th %-ile Error (°C) | $R^2$ (Level) | $R^2$ ($\Delta$) | Skill vs Persistence | Divert Recall |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -35,7 +35,39 @@ This repository implements a production-grade machine learning pipeline to forec
 
 ---
 
-##  Quickstart
+## Visual Diagnostics & Results
+
+### 1. 30-Second Ahead Temperature Forecasts vs Ground Truth
+*Upper panel shows the entire unseen test week; lower panel zooms into the most dynamic 45-minute operational transient:*
+![Test Forecasts](figures/test_forecasts.png)
+
+### 2. Model Accuracy & Benchmark Metrics
+*Comparison across MAE, RMSE, Skill Score vs. persistence, and Divert Early-Warning safety recall:*
+![Model Comparison](figures/model_comparison.png)
+
+### 3. Training & Validation Learning Curves
+*Loss trajectories with early-stopping convergence markers:*
+![Learning Curves](figures/learning_curves.png)
+
+### 4. Parity Density Hexbins
+*Forecast vs actual alignment along the identity line (diagonal):*
+![Parity Plot](figures/parity.png)
+
+### 5. Error Distribution & Operational Regimes
+*Left: residual error distribution; Right: MAE grouped by time elapsed since production start (start-ups vs steady state):*
+![Error Analysis](figures/error_analysis.png)
+
+### 6. Feature Importance
+*Top telemetry signals driving predictions in LightGBM and XGBoost:*
+![Feature Importance](figures/feature_importance.png)
+
+### 7. 7-Day SCADA Telemetry Overview
+*Holding tube temperature, steam control valve position, and feed flow across the continuous 7-day dataset with train/val/test splits:*
+![Data Overview](figures/data_overview.png)
+
+---
+
+## Quickstart
 
 ### 1. Installation
 Ensure your environment has the required dependencies:
@@ -66,11 +98,12 @@ This produces:
 
 ---
 
-##  Repository Structure
+## Repository Structure
 
 ```
 ├── configs/
 │   └── default.yaml             # System configuration, features & hyperparameters
+├── figures/                     # Publication-quality diagnostic graphs for README
 ├── src/
 │   ├── data/
 │   │   └── loader.py            # CSV deduplication, sanitization, and parquet caching
