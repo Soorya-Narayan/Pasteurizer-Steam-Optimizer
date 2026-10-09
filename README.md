@@ -1,4 +1,4 @@
-# HTST Pasteurizer Thermal Digital Twin 🥛⚡
+# HTST Pasteurizer Thermal Digital Twin 
 
 > **High-frequency predictive thermal modeling and early warning system for continuous milk pasteurization.**
 
@@ -6,7 +6,7 @@ This repository implements a production-grade machine learning pipeline to forec
 
 ---
 
-## 📊 Pipeline Highlights
+##  Pipeline Highlights
 
 * **Thermal Lag Modeling**: Models temperature change ($\Delta T_{t+h} = T_{t+h} - T_t$) rather than static levels, capturing thermodynamic delay and steam valve dynamics.
 * **Leakage-Free Production Segmentation**: Only valid production runs (flow $\ge 1000\text{ L/h}$) are modeled, with lag features bounded within continuous production runs.
@@ -22,7 +22,7 @@ This repository implements a production-grade machine learning pipeline to forec
 
 ---
 
-## 📈 Benchmark Performance (Unseen Test Set)
+##  Benchmark Performance (Unseen Test Set)
 
 | Model | MAE (°C) | RMSE (°C) | 95th %-ile Error (°C) | $R^2$ (Level) | $R^2$ ($\Delta$) | Skill vs Persistence | Divert Recall |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -35,7 +35,7 @@ This repository implements a production-grade machine learning pipeline to forec
 
 ---
 
-## 🚀 Quickstart
+##  Quickstart
 
 ### 1. Installation
 Ensure your environment has the required dependencies:
@@ -66,7 +66,7 @@ This produces:
 
 ---
 
-## 📁 Repository Structure
+##  Repository Structure
 
 ```
 ├── configs/
