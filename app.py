@@ -22,6 +22,7 @@ import streamlit as st
 from src.data.loader import clean_frame, read_csvs
 from src.features.engineering import make_supervised
 from src.models import MODEL_REGISTRY
+from src.optimizer.steam_mpc import SteamOptimizer, ThermodynamicProfile, optimize_shift_trajectory
 from src.utils.metrics import divert_warning_metrics, regression_metrics, skill_score
 
 st.set_page_config(
@@ -189,7 +190,12 @@ with col_s5:
 # -----------------------------------------------------------------------------
 # TABS
 # -----------------------------------------------------------------------------
-tab1, tab2, tab3 = st.tabs(["📈 Shift Telemetry & Forecast", "🧪 What-If Steam Simulator", "📊 Model Benchmark & Diagnostics"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "📈 Shift Telemetry & Forecast",
+    "⚡ Closed-Loop Steam Optimizer",
+    "🧪 What-If Steam Simulator",
+    "📊 Model Benchmark & Diagnostics",
+])
 
 with tab1:
     st.subheader(f"Shift Telemetry & {horizon_s}s Lookahead ({selected_model})")
@@ -296,6 +302,150 @@ with tab1:
     )
 
 with tab2:
+    st.subheader("⚡ Closed-Loop Steam Optimizer (MPC Engine)")
+    st.markdown("""
+    **Inverse Thermal Optimization**: Finds the exact Steam Control Valve opening ($CV^*$) required to keep the pasteurizer at the target setpoint
+    without wasting boiler steam or risking an under-pasteurization divert trip ($< 82.0^\\circ\\text{C}$).
+    """)
+
+    opt_engine = SteamOptimizer(meta, models, model_name=selected_model)
+
+    c_opt1, c_opt2 = st.columns([1, 2])
+    with c_opt1:
+        st.markdown("#### 🎯 Optimization Settings")
+        target_sp = st.slider("Target Holding Temp Setpoint (°C)", min_value=83.0, max_value=89.0, value=85.0, step=0.5)
+        max_slew = st.slider("Max Valve Slew Limit (Δ CV % per step)", min_value=5.0, max_value=25.0, value=15.0, step=1.0)
+        
+        st.info(f"""
+        - **Legal Safety Limit**: `{divert_thr} °C`
+        - **Safe Operating Floor**: `{divert_thr + margin} °C`
+        - **Surrogate Model**: `{selected_model}`
+        """)
+
+        # Optimize current real-time state
+        latest_row = data.X.iloc[-1]
+        step_opt = opt_engine.optimize_step(latest_row, curr_temp, target_temp=target_sp, max_slew_cv=max_slew)
+
+    with c_opt2:
+        st.markdown("#### 💡 Live Operator Recommendation")
+        
+        act_col1, act_col2, act_col3 = st.columns(3)
+        with act_col1:
+            st.metric("Operator Steam CV", f"{step_opt['current_cv']:.1f} %")
+        with act_col2:
+            st.metric("AI Optimal Steam CV", f"{step_opt['optimal_cv']:.1f} %", delta=f"{step_opt['delta_cv']:+.1f} %", delta_color="inverse")
+        with act_col3:
+            st.metric("Resulting Temp (+30s)", f"{step_opt['predicted_temp_optimal']:.2f} °C", delta=f"{step_opt['predicted_temp_optimal'] - target_sp:+.2f} °C vs target")
+
+        # Action banner
+        badge_style = "status-badge-ok" if "THROTTLE" in step_opt["action"] else ("status-badge-warn" if "INCREASE" in step_opt["action"] else "metric-card")
+        st.markdown(f"**Recommended Control Action**: <span class='{badge_style}' style='font-size: 1.1em;'>{step_opt['action']}</span>", unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown("#### ♨️ Real-Time Waste Rate (Overheating Penalty)")
+        w_c1, w_c2, w_c3 = st.columns(3)
+        w_c1.metric("Steam Waste Rate", f"{step_opt['steam_waste_kg_h']:.1f} kg/h")
+        w_c2.metric("Excess Thermal Power", f"{step_opt['power_waste_kw']:.1f} kW")
+        w_c3.metric("Financial Loss Rate", f"${step_opt['cost_waste_usd_h']:.2f} / hr")
+
+    st.markdown("---")
+    st.subheader("📊 Full-Shift Closed-Loop Simulation & Energy Audit")
+    st.markdown("Simulate what would happen if the AI Steam Optimizer operated the steam control valve autonomously throughout this entire production shift:")
+
+    if st.button("🚀 Run Shift Energy & Steam Audit", type="primary"):
+        with st.spinner("Simulating closed-loop trajectory across all shift timesteps..."):
+            sim_df = optimize_shift_trajectory(data, meta, models, target_temp=target_sp, model_name=selected_model, step_subsample=4)
+
+        tot_steam_kg = float(sim_df["cumulative_steam_saved_kg"].iloc[-1])
+        tot_energy_kwh = float(sim_df["cumulative_energy_saved_kwh"].iloc[-1])
+        tot_cost_usd = float(sim_df["cumulative_cost_saved_usd"].iloc[-1])
+        annual_projection_usd = tot_cost_usd * 3.0 * 365.0  # 3 shifts/day * 365 days
+
+        kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+        kpi1.metric("Total Steam Saved (Shift)", f"{tot_steam_kg:,.1f} kg")
+        kpi2.metric("Thermal Energy Saved", f"{tot_energy_kwh:,.1f} kWh")
+        kpi3.metric("Shift Cost Savings", f"${tot_cost_usd:,.2f}")
+        kpi4.metric("Projected Annual Savings", f"${annual_projection_usd:,.0f} / yr", delta="+ ROI Impact")
+
+        # Optimization Trajectory Plots
+        t_sim = pd.to_datetime(sim_df["timestamp"])
+        fig_opt = make_subplots(
+            rows=3, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.06,
+            subplot_titles=(
+                "Steam Control Valve: Actual Operator vs AI Optimal (%)",
+                "Holding Tube Temperature: Actual vs AI Controlled (°C)",
+                "Cumulative Steam Mass Conserved (kg)"
+            ),
+            row_heights=[0.38, 0.38, 0.24]
+        )
+
+        # 1. Steam CV
+        fig_opt.add_trace(go.Scatter(
+            x=t_sim, y=sim_df["current_cv"],
+            mode="lines", name="Actual Operator Steam CV (%)",
+            line=dict(color="#ffb703", width=1.5)
+        ), row=1, col=1)
+
+        fig_opt.add_trace(go.Scatter(
+            x=t_sim, y=sim_df["optimal_cv"],
+            mode="lines", name="AI Optimal Recommended CV (%)",
+            line=dict(color="#06d6a0", width=1.8)
+        ), row=1, col=1)
+
+        # 2. Temperature
+        fig_opt.add_trace(go.Scatter(
+            x=t_sim, y=sim_df["current_temp"],
+            mode="lines", name="Actual Holding Temp (°C)",
+            line=dict(color="#e6e9f0", width=1.5)
+        ), row=2, col=1)
+
+        fig_opt.add_trace(go.Scatter(
+            x=t_sim, y=sim_df["predicted_temp_optimal"],
+            mode="lines", name="AI Optimized Temp (°C)",
+            line=dict(color="#4cc9f0", width=1.8)
+        ), row=2, col=1)
+
+        fig_opt.add_hline(
+            y=target_sp, line_dash="dash", line_color="#06d6a0",
+            annotation_text=f"Target Setpoint ({target_sp}°C)",
+            row=2, col=1
+        )
+        fig_opt.add_hline(
+            y=divert_thr, line_dash="dot", line_color="#ef476f",
+            annotation_text=f"FDV Divert Limit ({divert_thr}°C)",
+            row=2, col=1
+        )
+
+        # 3. Cumulative Steam Saved
+        fig_opt.add_trace(go.Scatter(
+            x=t_sim, y=sim_df["cumulative_steam_saved_kg"],
+            mode="lines", name="Cumulative Steam Saved (kg)",
+            line=dict(color="#06d6a0", width=2.2),
+            fill="tozeroy",
+            fillcolor="rgba(6, 214, 160, 0.15)"
+        ), row=3, col=1)
+
+        fig_opt.update_layout(
+            template="plotly_dark",
+            height=750,
+            hovermode="x unified",
+            margin=dict(l=40, r=40, t=40, b=40),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_opt, use_container_width=True)
+
+        # Export audit dataframe
+        audit_csv = sim_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Shift Energy Audit Report (CSV)",
+            data=audit_csv,
+            file_name="steam_optimizer_shift_audit.csv",
+            mime="text/csv",
+        )
+
+with tab3:
     st.subheader("🧪 Steam Control What-If Simulation")
     st.markdown("""
     Test hypothetical operator interventions on the latest production state:
