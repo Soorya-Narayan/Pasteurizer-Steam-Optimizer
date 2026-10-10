@@ -101,11 +101,28 @@ Launch the web interface for operators and engineers:
 ```bash
 streamlit run app.py
 ```
-Open `http://localhost:8501` to access:
-* **⚡ Closed-Loop Steam Optimizer**: Model Predictive Control (MPC) engine generating real-time actuator setpoints (`Steam CV %`), safety trip barrier enforcement, and full-shift thermodynamic energy audit (steam kg/h, excess kWh, dollar savings).
-* **Interactive Shift Telemetry**: Dual-axis zoomable Plotly charts with true temperatures, lookahead curves, and automatic divert risk flags.
-* **What-If Steam Simulator**: Real-time slider controls simulating Steam CV and milk throughput perturbations with dynamic thermal response gauges.
-* **Model Benchmark Viewer**: Embedded accuracy comparison tables and full resolution diagnostic figures.
+Open `http://localhost:8501` to access.
+
+### 5. Launch Modern React Web Dashboard (shadcn/ui)
+For a high-performance modern web application inspired by **shadcn/ui** (Tailwind CSS, Radix UI, Lucide icons, and Recharts):
+
+1. **Start the FastAPI Backend Server** (port 8000):
+   ```bash
+   uvicorn api:app --host 127.0.0.1 --port 8000
+   ```
+
+2. **Start the Vite React Frontend** (port 5173):
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+Open `http://localhost:5173` to access:
+* **⚡ Closed-Loop Steam Optimizer**: Real-time Model Predictive Control actuator setpoints, slew rate adjustments, and thermodynamic energy audit with multi-series Recharts trajectories.
+* **📈 SCADA Telemetry & Lookahead**: Continuous dual-axis time series and food safety trip hazard early warning system.
+* **🧪 What-If Simulator**: Real-time slider perturbations testing thermal sensitivity to valve biases and milk throughput surges.
+* **📊 Model Diagnostics**: Dynamic benchmark tables across LightGBM, XGBoost, Residual MLP, and Ensemble models.
 
 ---
 
