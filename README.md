@@ -96,6 +96,16 @@ This produces:
 * `<run>/predictions/pasteurizer_dataset41_predictions.csv` with predictions and boolean divert flags.
 * `<run>/predictions/pasteurizer_dataset41_forecast.png` visualizing the forecast vs actual readings.
 
+### 4. Launch Interactive Streamlit Dashboard
+Launch the web interface for operators and engineers:
+```bash
+streamlit run app.py
+```
+Open `http://localhost:8501` to access:
+* **Interactive Shift Telemetry**: Dual-axis zoomable Plotly charts with true temperatures, lookahead curves, and automatic divert risk flags.
+* **What-If Steam Simulator**: Real-time slider controls simulating Steam CV and milk throughput perturbations with dynamic thermal response gauges.
+* **Model Benchmark Viewer**: Embedded accuracy comparison tables and full resolution diagnostic figures.
+
 ---
 
 ## Repository Structure
